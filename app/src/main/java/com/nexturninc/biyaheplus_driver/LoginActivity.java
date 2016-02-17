@@ -357,11 +357,6 @@ public class LoginActivity extends Activity implements LoaderManager.LoaderCallb
                                     apiResponseData = jsonResponse.getJSONObject("ResponseData");
                                     JSONObject vehicleInfo = apiResponseData.getJSONObject("Vehicle");
 
-                                    //SAVE TO TEMPORARY STORAGE
-                                    // Gets the data repository in write mode
-                                    helper = DatabaseHelper.getInstance(getBaseContext());
-                                    db = helper.getWritableDatabase();
-
                                     // Create a new map of values, where column names are the keys
                                     ContentValues values2 = new ContentValues();
                                     values2.put(Database_VehicleContract.Vehicle.COLUMN_NAME_Id, vehicleInfo.getString("Id"));
@@ -377,12 +372,14 @@ public class LoginActivity extends Activity implements LoaderManager.LoaderCallb
                                     //SAVE TO DB
                                     long newRowId;
                                     db.delete(Database_UserProfileContract.UserProfile.TABLE_NAME, null, null);
+                                    db.delete(Database_VehicleContract.Vehicle.TABLE_NAME, null, null);
+
                                     newRowId = db.insert(
                                             Database_UserProfileContract.UserProfile.TABLE_NAME,
                                             Database_UserProfileContract.UserProfile.COLUMN_NAME_UserId,
                                             values);
 
-                                    db.delete(Database_VehicleContract.Vehicle.TABLE_NAME, null, null);
+
                                     newRowId = db.insert(
                                             Database_VehicleContract.Vehicle.TABLE_NAME,
                                             Database_VehicleContract.Vehicle.COLUMN_NAME_UserId,

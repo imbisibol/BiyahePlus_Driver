@@ -24,4 +24,8 @@
     <string name="error_invalid_password">Password is required!</string>
     <string name="error_incorrect_password">Username and Password do not match!</string>
     <string name="error_field_required">This field is required</string>
+    <string name="lblOperatorRequestLabel">Operator Request</string>
+    <string name="lblNoRequestLabel">NONE</string>
+    <string name="lblCommuterOriginLabel">Origin:</string>
+    <string name="lblCommuterDestinationLabel">Destination:</string>
 </resources>
