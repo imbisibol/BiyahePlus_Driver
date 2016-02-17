@@ -1,5 +1,9 @@
 package com.nexturninc.biyaheplus_driver;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -31,6 +35,23 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        }
+        else  if (id == R.id.action_logout) {
+
+            DatabaseHelper helper = DatabaseHelper.getInstance(getBaseContext());
+            SQLiteDatabase db = helper.getWritableDatabase();
+
+            db.delete(Database_UserProfileContract.UserProfile.TABLE_NAME, null, null);
+            db.delete(Database_VehicleContract.Vehicle.TABLE_NAME, null, null);
+
+            SharedPreferences mSettings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+            SharedPreferences.Editor editor = mSettings.edit();
+            editor.clear();
+            editor.commit();
+
+            Intent intent = new Intent(getBaseContext(), LoginActivity.class);
+            startActivity(intent);
+
         }
 
         return super.onOptionsItemSelected(item);
