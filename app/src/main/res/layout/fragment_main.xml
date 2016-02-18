@@ -16,13 +16,13 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginRight="20dp"
-        android:layout_marginBottom="20dp">
+        android:layout_marginBottom="10dp">
 
             <ImageView
                 android:id="@+id/imgAvatarURL"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
-                android:layout_marginRight="20dp"/>
+                android:layout_marginRight="10dp"/>
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -79,84 +79,125 @@
             android:layout_gravity="center"
             android:layout_marginBottom="8dp" android:visibility="gone" />
 
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:orientation="vertical" android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/dvOperatorRequest"
-            android:textAlignment="center"
-            android:layout_gravity="center"
-            android:layout_margin="10dp">
+        <ScrollView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
 
-            <!-- OPERATOR REQUEST DETAILS -->
-            <LinearLayout
+            <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:orientation="vertical" android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/dvOperatorRequest"
+                android:textAlignment="center"
                 android:layout_gravity="center"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginRight="20dp"
-                android:layout_marginBottom="20dp">
+                android:layout_margin="10dp"
+                android:visibility="gone">
 
-                <ImageView
-                    android:id="@+id/imgCommuterAvatar"
-                    android:layout_width="100dp"
-                    android:layout_height="100dp"
-                    android:layout_marginRight="20dp"/>
-
+                <!-- OPERATOR REQUEST DETAILS -->
                 <LinearLayout
+                    android:layout_gravity="center"
                     android:layout_width="fill_parent"
-                    android:layout_height="fill_parent"
-                    android:orientation="vertical"
-                    android:layout_marginBottom="10dp">
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginRight="0dp"
+                    android:layout_marginBottom="20dp">
 
-                    <TextView
-                        android:id="@+id/lblCommuterName"
-                        android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="20dp"
-                        />
+                    <ImageView
+                        android:id="@+id/imgCommuterAvatar"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:layout_marginRight="10dp"/>
 
-                    <TextView
-                        android:id="@+id/lblCommuterOrigin"
-                        android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="fill_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="16dp"
-                        android:text="@string/lblCommuterOriginLabel"
-                        />
+                        android:orientation="vertical"
+                        android:layout_marginBottom="10dp">
 
-                    <TextView
-                        android:id="@+id/lblCommuterDestination"
-                        android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="16dp"
-                        android:text="@string/lblCommuterDestinationLabel"
-                        />
+                        <TextView
+                            android:id="@+id/lblRideId"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="40dp"
+                            android:visibility="gone"
+                            />
+
+                        <TextView
+                            android:id="@+id/lblCommuterName"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="24dp"
+                            />
+
+                        <TextView
+                            android:id="@+id/lblCommuterOriginLabel"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lblCommuterOriginLabel"
+                            android:layout_marginTop="10dp"
+                            android:textSize="20dp"
+                            />
+                        <TextView
+                            android:id="@+id/lblCommuterOrigin"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="16dp"
+                            android:text="@string/lblCommuterOriginLabel"
+                            />
+
+                        <TextView
+                            android:id="@+id/lblCommuterDestinationLabel"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lblCommuterDestinationLabel"
+                            android:layout_marginTop="10dp"
+                            android:textSize="20dp"
+                            />
+                        <TextView
+                            android:id="@+id/lblCommuterDestination"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="16dp"
+                            android:text="@string/lblCommuterDestinationLabel"
+                            />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
+                <ImageButton
+                    android:id="@+id/ibtnCallCommuter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="0dp"
+                    android:layout_marginBottom="15dp"
+                    android:layout_gravity="center"
+                    android:src="@mipmap/call_commuter"
+                    android:scaleType="fitCenter"
+                    android:adjustViewBounds="true"
+                    />
+
+                <ImageButton
+                    android:id="@+id/ibtnAccept"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="0dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="Accept Booking"
+                    android:layout_gravity="center"
+                    android:src="@mipmap/accept_booking"
+                    android:scaleType="fitCenter"
+                    android:adjustViewBounds="true"
+                    />
+
             </LinearLayout>
 
-            <Button
-                android:id="@+id/ibtnCallCommuter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:text="Call Commuter"
-                android:layout_gravity="center"
-                />
-
-            <Button
-                android:id="@+id/ibtnAccept"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:text="Accept Booking"
-                android:layout_gravity="center"
-                />
-
-        </LinearLayout>
+        </ScrollView>
 
     </LinearLayout>
 

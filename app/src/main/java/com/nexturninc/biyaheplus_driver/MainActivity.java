@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
 
             db.delete(Database_UserProfileContract.UserProfile.TABLE_NAME, null, null);
             db.delete(Database_VehicleContract.Vehicle.TABLE_NAME, null, null);
+            db.delete(Database_RideContract.Ride.TABLE_NAME, null, null);
 
             SharedPreferences mSettings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
             SharedPreferences.Editor editor = mSettings.edit();

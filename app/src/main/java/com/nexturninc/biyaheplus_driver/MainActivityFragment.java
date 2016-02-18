@@ -4,21 +4,28 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -29,12 +36,25 @@ public class MainActivityFragment extends Fragment {
     private ProgressBar mProgressBar;
     private View mStampListBody;
     String UserID;
+    String VehicleId;
+    Integer RideId;
+    private CommuterRequestTask mAuthTask = null;
 
+    //CONTROLS
+    ProgressBar login_progress = null;
+    LinearLayout dvOperatorRequest = null;
     ImageView imgAvatarURL;
     TextView lblFirstName;
     TextView lblLastName;
 
+    TextView lblNoRequestLabel;
+
+    TextView lblRideId;
     ImageView imgCommuterAvatar;
+    TextView lblCommuterName;
+    TextView lblCommuterOrigin;
+    TextView lblCommuterDestination;
+
 
     public MainActivityFragment() {
     }
@@ -50,13 +70,25 @@ public class MainActivityFragment extends Fragment {
         UserID = mSettings.getString(getString(R.string.SHARE_PREF_UserId), null);
 
         //INITIALIZE CONTROLS
-        imgAvatarURL = (ImageView)rootView.findViewById(R.id.imgAvatarURL);
-        lblFirstName = (TextView)rootView.findViewById(R.id.lblFirstName);
-        lblLastName = (TextView)rootView.findViewById(R.id.lblLastName);
+        login_progress = (ProgressBar) rootView.findViewById(R.id.login_progress);
+        dvOperatorRequest = (LinearLayout) rootView.findViewById(R.id.dvOperatorRequest);
+        imgAvatarURL = (ImageView) rootView.findViewById(R.id.imgAvatarURL);
+        lblFirstName = (TextView) rootView.findViewById(R.id.lblFirstName);
+        lblLastName = (TextView) rootView.findViewById(R.id.lblLastName);
 
-        imgCommuterAvatar = (ImageView)rootView.findViewById(R.id.imgCommuterAvatar);
+        lblNoRequestLabel = (TextView)rootView.findViewById(R.id.lblNoRequestLabel);
+
+        lblRideId = (TextView)rootView.findViewById(R.id.lblRideId);
+        imgCommuterAvatar = (ImageView) rootView.findViewById(R.id.imgCommuterAvatar);
+        lblCommuterName = (TextView) rootView.findViewById(R.id.lblCommuterName);
+        lblCommuterOrigin = (TextView)rootView.findViewById(R.id.lblCommuterOrigin);
+        lblCommuterDestination = (TextView)rootView.findViewById(R.id.lblCommuterDestination);
+
 
         LoadProfileData(UserID);
+        LoadVehicleData(UserID);
+        LoadCommuterRequests(VehicleId);
+
 
         return rootView;
     }
@@ -87,36 +119,246 @@ public class MainActivityFragment extends Fragment {
                 null                                 // The sort order
         );
 
-        if(c.moveToNext()) {
+        if (c.moveToNext()) {
 
             Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_AvatarURL)), imgAvatarURL);
             lblFirstName.setText(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_FirstName)));
             lblLastName.setText(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_LastName)) + ",");
 
-            //temp
-            Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_AvatarURL)), imgCommuterAvatar);
         }
+    }
 
-        /*
-        //CONTROLS
-        TextView lblLoyaltyTitle = (TextView)findViewById(R.id.lblLoyaltyTitle);
-        TextView lblVolume = (TextView)findViewById(R.id.lblVolume);
-        TextView lblCardPrice = (TextView) findViewById(R.id.lblCardPrice);
-        TextView lblExpiryDate = (TextView) findViewById(R.id.lblExpiryDate);
-        ImageView imgCard = (ImageView) findViewById(R.id.imgCard);
-        ImageView imgQRCode = (ImageView) findViewById(R.id.imgQRCode);
+    private void LoadVehicleData(String id) {
 
-        if(c.moveToNext()) {
-            lblLoyaltyTitle.setText(c.getString(c.getColumnIndexOrThrow(MerchantLoyaltyContract.MerchantLoyaltyInformation.COLUMN_NAME_Title)));
-            lblVolume.setText("AVAILABLE: " + c.getString(c.getColumnIndexOrThrow(MerchantLoyaltyContract.MerchantLoyaltyInformation.COLUMN_NAME_Volume)));
-            lblCardPrice.setText(getString(R.string.Currency) + c.getString(c.getColumnIndexOrThrow(MerchantLoyaltyContract.MerchantLoyaltyInformation.COLUMN_NAME_Card_Price)));
-            lblExpiryDate.setText(c.getString(c.getColumnIndexOrThrow(MerchantLoyaltyContract.MerchantLoyaltyInformation.COLUMN_NAME_Date_Expiration)));
-            lblExpiryDate.setText(lblExpiryDate.getText().toString().substring(0, lblExpiryDate.getText().toString().indexOf("T")));
-            Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(MerchantLoyaltyContract.MerchantLoyaltyInformation.COLUMN_NAME_Loyalty_Card_Image)), imgCard);Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(MerchantLoyaltyContract.MerchantLoyaltyInformation.COLUMN_NAME_Loyalty_Card_QR)), imgQRCode);
+        DatabaseHelper helper = DatabaseHelper.getInstance(getContext());
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        //GET DATA FROM DB
+        String[] projection = {
+                Database_VehicleContract.Vehicle.COLUMN_NAME_Id,
+                Database_VehicleContract.Vehicle.COLUMN_NAME_UserId,
+                Database_VehicleContract.Vehicle.COLUMN_NAME_DriverName,
+                Database_VehicleContract.Vehicle.COLUMN_NAME_DriverPhoto,
+                Database_VehicleContract.Vehicle.COLUMN_NAME_PlateNo,
+                Database_VehicleContract.Vehicle.COLUMN_NAME_VehicleType
+        };
+
+        Cursor c = db.query(
+                Database_VehicleContract.Vehicle.TABLE_NAME,  // The table to query
+                projection,                               // The columns to return
+                Database_VehicleContract.Vehicle.COLUMN_NAME_UserId + " = ?",                                // The columns for the WHERE clause
+                new String[]{id},                            // The values for the WHERE clause
+                null,                                     // don't group the rows
+                null,                                     // don't filter by row groups
+                null                                 // The sort order
+        );
+
+        if (c.moveToNext()) {
+
+            VehicleId = c.getString(c.getColumnIndexOrThrow(Database_VehicleContract.Vehicle.COLUMN_NAME_Id));
 
         }
-        */
+    }
+
+    private void LoadBooking (String rideId){
+
+        DatabaseHelper helper = DatabaseHelper.getInstance(getContext());
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        //GET DATA FROM DB
+        String[] projection = {
+                Database_RideContract.Ride.COLUMN_NAME_Id,
+                Database_RideContract.Ride.COLUMN_NAME_VehicleId,
+                Database_RideContract.Ride.COLUMN_NAME_CommuterId,
+                Database_RideContract.Ride.COLUMN_NAME_CommuterName,
+                Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto,
+                Database_RideContract.Ride.COLUMN_NAME_OrigLocation,
+                Database_RideContract.Ride.COLUMN_NAME_DestLocation,
+
+        };
+
+        Cursor c = db.query(
+                Database_RideContract.Ride.TABLE_NAME,  // The table to query
+                projection,                               // The columns to return
+                Database_RideContract.Ride.COLUMN_NAME_Id + " = ?",                                // The columns for the WHERE clause
+                new String[]{rideId},                            // The values for the WHERE clause
+                null,                                     // don't group the rows
+                null,                                     // don't filter by row groups
+                null                                 // The sort order
+        );
+
+        if(c.getCount() > 0) {
+            lblNoRequestLabel.setVisibility(View.GONE);
+            dvOperatorRequest.setVisibility(View.VISIBLE);
+            if (c.moveToNext()) {
+
+                Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto)), imgCommuterAvatar);
+
+                lblRideId.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_Id)));
+                lblCommuterName.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterName)));
+                lblCommuterOrigin.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_OrigLocation)));
+                lblCommuterDestination.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_DestLocation)));
+            }
+        }
+        else {
+            lblNoRequestLabel.setVisibility(View.VISIBLE);
+            dvOperatorRequest.setVisibility(View.GONE);
+        }
 
     }
 
+    private void LoadCommuterRequests(String vehicleId) {
+
+        if (mAuthTask != null) {
+            return;
+        }
+
+        if (Common.GetInternetConnectivity((ConnectivityManager)getContext().getSystemService(Context.CONNECTIVITY_SERVICE))) {
+            showProgress(true);
+            mAuthTask = new CommuterRequestTask(vehicleId);
+            mAuthTask.execute((Void) null);
+        }
+    }
+
+    public class CommuterRequestTask extends AsyncTask<Void, Void, Boolean> {
+
+        private final String mVehicleId;
+
+        CommuterRequestTask(String vehicleId) {
+            mVehicleId = vehicleId;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // TODO: attempt authentication against a network service.
+
+            Boolean loginSuccess = false;
+            JSONObject jsonResponse = null;
+
+            try {
+
+                Common comm = new Common();
+                comm.setAPIURL(getString(R.string.APIURL));
+                jsonResponse = comm.GetAPI("api/RideView?commuterId=&vehicleId=" + mVehicleId + "&status=Open&appId=" + getString(R.string.app_id));
+
+
+                if (jsonResponse != null) {
+
+                    String strSuccess = jsonResponse.getString("Success");
+
+                    if (strSuccess == "true") {
+
+                        JSONObject apiResponseData = jsonResponse.getJSONObject("ResponseData");
+                        JSONArray rides = apiResponseData.getJSONArray("Rides");
+
+                        if(rides != null && rides.length() > 0) {
+
+                            RideId = rides.getJSONObject(0).getInt(Database_RideContract.Ride.COLUMN_NAME_Id);
+
+                            // Gets the data repository in write mode
+                            DatabaseHelper helper = DatabaseHelper.getInstance(getContext());
+                            SQLiteDatabase db = helper.getWritableDatabase();
+
+                            // Create a new map of values, where column names are the keys
+                            ContentValues values = new ContentValues();
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_Id, rides.getJSONObject(0).getInt(Database_RideContract.Ride.COLUMN_NAME_Id));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterId, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterId));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterName, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterName));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLocation, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_OrigLocation));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLong, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLong));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLat, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLat));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_DestLocation, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_DestLocation));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_DestLong, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_DestLong));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_DestLat, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_DestLat));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_LastUpdated, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_LastUpdated));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_Status, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_Status));
+                            values.put(Database_RideContract.Ride.COLUMN_NAME_VehicleId, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_VehicleId));
+
+                            long newRowId;
+                            db.delete(Database_RideContract.Ride.TABLE_NAME, null, null);
+
+                            newRowId = db.insert(
+                                    Database_RideContract.Ride.TABLE_NAME,
+                                    Database_RideContract.Ride.COLUMN_NAME_Id,
+                                    values);
+
+
+                            db.close(); //SAVE TO DB
+                        }
+
+
+                        loginSuccess = true;
+                    }
+                }
+
+            }
+            catch (Exception ex) {
+                String message = ex.getMessage();
+            }
+
+
+            // TODO: register the new account here.
+            return loginSuccess;
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            mAuthTask = null;
+            showProgress(false);
+
+            if (success) {
+                lblNoRequestLabel.setVisibility(View.VISIBLE);
+                dvOperatorRequest.setVisibility(View.GONE);
+
+                if(RideId != null) {
+                    LoadBooking(RideId.toString());
+                }
+            }
+            else {
+
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            mAuthTask = null;
+            showProgress(false);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+    public void showProgress(final boolean show) {
+        /*
+        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
+        // for very easy animations. If available, use these APIs to fade-in
+        // the progress spinner.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
+
+            dvOperatorRequest.setVisibility(show ? View.GONE : View.VISIBLE);
+            dvOperatorRequest.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    dvOperatorRequest.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+
+            login_progress.setVisibility(show ? View.VISIBLE : View.GONE);
+            login_progress.animate().setDuration(shortAnimTime).alpha(
+                    show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    login_progress.setVisibility(show ? View.VISIBLE : View.GONE);
+                }
+            });
+        } else {
+            // The ViewPropertyAnimator APIs are not available, so simply show
+            // and hide the relevant UI components.
+            login_progress.setVisibility(show ? View.VISIBLE : View.GONE);
+            dvOperatorRequest.setVisibility(show ? View.GONE : View.VISIBLE);
+        }
+        */
+    }
 }

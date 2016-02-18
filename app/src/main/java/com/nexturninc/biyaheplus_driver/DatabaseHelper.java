@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
     // If you change the database schema, you must increment the database version.
-    public static final int DATABASE_VERSION = 3;
+    public static final int DATABASE_VERSION = 5;
     public static final String DATABASE_NAME = "BiyaheOfflineData.db";
 
     public static DatabaseHelper sqlHelperInstance;
@@ -33,6 +33,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     {
         db.execSQL(Database_UserProfileContract.SQL_CREATE_TABLE);
         db.execSQL(Database_VehicleContract.SQL_CREATE_TABLE);
+        db.execSQL(Database_RideContract.SQL_CREATE_TABLE);
     }
 
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -40,6 +41,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // to simply to discard the data and start over
         db.execSQL(Database_UserProfileContract.SQL_DELETE_TABLE);
         db.execSQL(Database_VehicleContract.SQL_DELETE_TABLE);
+        db.execSQL(Database_RideContract.SQL_DELETE_TABLE);
         onCreate(db);
     }
 
