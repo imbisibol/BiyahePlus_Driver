@@ -29,6 +29,8 @@
     <string name="lblCommuterOriginLabel">Origin:</string>
     <string name="lblCommuterDestinationLabel">Destination:</string>
     <string name="InternetConnectionMessage">Internet connection is required.</string>
-    <string name="lblUpdating">Updating...</string>
+    <string name="lblUpdating">Updating Information...</string>
     <string name="BookingAcceptedMessage">Booking has been accepted! Thank you and safe travels!</string>
+    <string name="CommuterNoMobile">Commuter does not have a Mobile Number.</string>
+    <string name="ErrorMessage">An unexpected error has occurred!</string>
 </resources>

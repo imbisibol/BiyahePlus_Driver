@@ -81,6 +81,7 @@
             android:text="@string/lblUpdating"
             android:textColor="@color/fontColor"
             android:visibility="invisible"
+            android:layout_gravity="center"
             />
 
         <TextView
@@ -135,7 +136,6 @@
                             android:visibility="gone"
                             />
 
-
                         <TextView
                             android:id="@+id/lblCommuterName"
                             android:textAppearance="?android:attr/textAppearanceLarge"
@@ -152,6 +152,15 @@
                             android:layout_height="wrap_content"
                             android:textSize="14dp"
                             android:textColor="@color/fontColorSub"
+                            />
+
+                        <TextView
+                            android:id="@+id/lblCommuterMobileNo"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="14dp"
+                            android:textColor="@color/fontColor"
                             />
 
                         <TextView

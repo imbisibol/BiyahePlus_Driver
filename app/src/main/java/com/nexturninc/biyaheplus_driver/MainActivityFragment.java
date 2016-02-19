@@ -1,5 +1,6 @@
 package com.nexturninc.biyaheplus_driver;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
@@ -9,10 +10,17 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.Image;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.preference.PreferenceManager;
@@ -55,6 +63,16 @@ public class MainActivityFragment extends Fragment {
 
     private CommuterRequestTask mAuthTask = null;
     private AcceptBookingTask mBookTask = null;
+    private UpdateCurrentLocationTask mLocationTask = null;
+
+    //LOCATION MANAGER
+    private LocationManager locManager;
+    private LocationListener locListener = new MyLocationListener();
+    private boolean gps_enabled = false;
+    private boolean network_enabled = false;
+    private boolean locationChanged = false;
+    private Double latitude;
+    private Double longitude;
 
     //CONTROLS
     LinearLayout dvOperatorRequest = null;
@@ -70,8 +88,10 @@ public class MainActivityFragment extends Fragment {
     TextView lblCommuterName;
     TextView lblCommuterOrigin;
     TextView lblCommuterDestination;
+    TextView lblCommuterMobileNo;
 
     ImageButton ibtnAccept;
+    ImageButton ibtnCallCommuter;
 
     TextView lblUpdating;
 
@@ -108,6 +128,7 @@ public class MainActivityFragment extends Fragment {
         lblCommuterName = (TextView) rootView.findViewById(R.id.lblCommuterName);
         lblCommuterOrigin = (TextView)rootView.findViewById(R.id.lblCommuterOrigin);
         lblCommuterDestination = (TextView)rootView.findViewById(R.id.lblCommuterDestination);
+        lblCommuterMobileNo = (TextView)rootView.findViewById(R.id.lblCommuterMobileNo);
 
         ibtnAccept = (ImageButton)rootView.findViewById(R.id.ibtnAccept);
         ibtnAccept.setOnClickListener(new View.OnClickListener() {
@@ -124,6 +145,58 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
+        ibtnCallCommuter = (ImageButton)rootView.findViewById(R.id.ibtnCallCommuter);
+        ibtnCallCommuter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(lblCommuterMobileNo.getText().length() == 0)
+                {
+                    Toast toast = Toast.makeText(getContext(), R.string.CommuterNoMobile, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                else {
+
+                    Intent in = new Intent(Intent.ACTION_CALL,Uri.parse("tel:" + lblCommuterMobileNo.getText().toString()));
+                    try{
+                        getContext().startActivity(in);
+                    }
+                    catch (android.content.ActivityNotFoundException ex){
+                        Toast.makeText(getContext(), R.string.ErrorMessage,Toast.LENGTH_SHORT).show();
+                    }
+
+                }
+            }
+        });
+
+        //GPS
+        locManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+        try {
+            gps_enabled = locManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        }
+        catch (Exception ex) {
+        }
+
+        try {
+            network_enabled = locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        }
+        catch (Exception ex) {
+        }
+
+        // don't start listeners if no provider is enabled
+        if (!gps_enabled && !network_enabled) {
+            Toast toast = Toast.makeText(getContext(), "Unable to track location. Please ensure that GPS is enabled on your phone.", Toast.LENGTH_SHORT);
+            toast.show();
+        }
+
+        if (getActivity().checkCallingPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (gps_enabled) {
+                locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locListener);
+            }
+            if (network_enabled) {
+                locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locListener);
+            }
+        }
+
         LoadProfileData(UserID);
         LoadVehicleData(UserID);
         LoadCommuterRequests(VehicleId);
@@ -133,6 +206,7 @@ public class MainActivityFragment extends Fragment {
     }
 
 
+    //METHODS
     private void LoadProfileData(String id) {
 
         DatabaseHelper helper = DatabaseHelper.getInstance(getContext());
@@ -211,6 +285,7 @@ public class MainActivityFragment extends Fragment {
                 Database_RideContract.Ride.COLUMN_NAME_CommuterId,
                 Database_RideContract.Ride.COLUMN_NAME_CommuterName,
                 Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto,
+                Database_RideContract.Ride.COLUMN_NAME_CommuterMobileNo,
                 Database_RideContract.Ride.COLUMN_NAME_OrigLocation,
                 Database_RideContract.Ride.COLUMN_NAME_DestLocation,
                 Database_RideContract.Ride.COLUMN_NAME_LastUpdated,
@@ -228,6 +303,17 @@ public class MainActivityFragment extends Fragment {
         );
 
         if(c.getCount() > 0) {
+
+            if(!dvOperatorRequest.isShown()) {
+                try {
+                    Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                    Ringtone r = RingtoneManager.getRingtone(getContext().getApplicationContext(), notification);
+                    r.play();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             lblNoRequestLabel.setVisibility(View.GONE);
             dvOperatorRequest.setVisibility(View.VISIBLE);
             if (c.moveToNext()) {
@@ -236,6 +322,7 @@ public class MainActivityFragment extends Fragment {
 
                 lblRideId.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_Id)));
                 lblCommuterName.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterName)));
+                lblCommuterMobileNo.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterMobileNo)));
                 lblCommuterOrigin.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_OrigLocation)));
                 lblCommuterDestination.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_DestLocation)));
                 lblRideDate.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_LastUpdated)));
@@ -248,7 +335,6 @@ public class MainActivityFragment extends Fragment {
                 {
                     ibtnAccept.setVisibility(View.GONE);
                 }
-
             }
         }
         else {
@@ -258,7 +344,7 @@ public class MainActivityFragment extends Fragment {
 
     }
 
-
+    //TASK LAUNCHERS
     private void LoadCommuterRequests(String vehicleId) {
 
         if (mAuthTask != null) {
@@ -295,7 +381,27 @@ public class MainActivityFragment extends Fragment {
         }
     }
 
+    private void UpdateLocationRequests(String vehicleId) {
 
+        if (mLocationTask != null) {
+            return;
+        }
+
+        if (Common.GetInternetConnectivity((ConnectivityManager)getContext().getSystemService(Context.CONNECTIVITY_SERVICE))) {
+            showProgress(true);
+            mLocationTask = new UpdateCurrentLocationTask(vehicleId);
+            mLocationTask.execute((Void) null);
+        }
+        else
+        {
+            Toast toast = Toast.makeText(getContext(), R.string.InternetConnectionMessage, Toast.LENGTH_SHORT);
+            toast.show();
+        }
+    }
+
+
+
+    //TASKS / LISTENERS
     public class CommuterRequestTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mVehicleId;
@@ -327,6 +433,7 @@ public class MainActivityFragment extends Fragment {
                         JSONObject apiResponseData = jsonResponse.getJSONObject("ResponseData");
                         JSONArray rides = apiResponseData.getJSONArray("Rides");
 
+                        int ridesRetrieved = 0;
                         if(rides != null && rides.length() > 0) {
 
                             for(int ctr=0;ctr < rides.length(); ctr++) {
@@ -335,7 +442,9 @@ public class MainActivityFragment extends Fragment {
                                 String vehicleId = rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_VehicleId);
 
                                 if(status.equals("Open")
-                                        || (vehicleId.equals(VehicleId))) {
+                                   || status.equals("Assigned")) {
+
+                                    ridesRetrieved = ridesRetrieved + 1;
 
                                     RideId = rides.getJSONObject(ctr).getInt(Database_RideContract.Ride.COLUMN_NAME_Id);
 
@@ -349,6 +458,7 @@ public class MainActivityFragment extends Fragment {
                                     values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterId, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterId));
                                     values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterName, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterName));
                                     values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterMobileNo, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterMobileNo ));
                                     values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLocation, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_OrigLocation));
                                     values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLong, rides.getJSONObject(ctr).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLong));
                                     values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLat, rides.getJSONObject(ctr).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLat));
@@ -373,8 +483,9 @@ public class MainActivityFragment extends Fragment {
 
                             }
                         }
-                        else {
 
+                        if(ridesRetrieved == 0)
+                        {
                             RideId = 0;
 
                             // Gets the data repository in write mode
@@ -495,6 +606,70 @@ public class MainActivityFragment extends Fragment {
         }
     }
 
+    public class UpdateCurrentLocationTask extends AsyncTask<Void, Void, Boolean> {
+
+        private final String mVehicleId;
+
+        UpdateCurrentLocationTask(String vehicleId)
+        {
+            mVehicleId = vehicleId;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // TODO: attempt authentication against a network service.
+
+            Boolean loginSuccess = false;
+            JSONObject jsonResponse = null;
+
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+
+                Common comm = new Common();
+                comm.setAPIURL(getString(R.string.APIURL));
+                jsonResponse = comm.PostAPI(jsonParam, "api/Vehicle?id=" + mVehicleId + "&longitude=" + longitude + "&latitude=" + latitude + "&appId=" + getString(R.string.app_id));
+
+                if (jsonResponse != null) {
+
+                    String strSuccess = jsonResponse.getString("Success");
+
+                    if (strSuccess == "true") {
+
+                        loginSuccess = true;
+                    }
+                }
+
+            }
+            catch (Exception ex) {
+                String message = ex.getMessage();
+            }
+
+
+            // TODO: register the new account here.
+            return loginSuccess;
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            mAuthTask = null;
+            showProgress(false);
+
+            if (success) {
+                locationChanged = false;
+            }
+            else {
+
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            mAuthTask = null;
+            showProgress(false);
+        }
+    }
+
     class MyTimerTask extends TimerTask {
 
         @Override
@@ -504,10 +679,42 @@ public class MainActivityFragment extends Fragment {
                 @Override
                 public void run() {
                     LoadCommuterRequests(VehicleId);
+
+                    if(locationChanged) {
+                        UpdateLocationRequests(VehicleId);
+                    }
                 }
             });
         }
 
+    }
+
+    class MyLocationListener implements LocationListener {
+        @Override
+        public void onLocationChanged(Location location) {
+            if (location != null
+                && getActivity().checkCallingPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            {
+                // This needs to stop getting the location data and save the battery power.
+                locManager.removeUpdates(locListener);
+                latitude = location.getLatitude();
+                longitude = location.getLongitude();
+
+                locationChanged = true;
+            }
+        }
+        @Override
+        public void onProviderDisabled(String provider) {
+            // TODO Auto-generated method stub
+        }
+        @Override
+        public void onProviderEnabled(String provider) {
+            // TODO Auto-generated method stub
+        }
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            // TODO Auto-generated method stub
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)

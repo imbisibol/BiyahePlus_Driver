@@ -19,6 +19,7 @@ public class Database_RideContract {
                     Ride.COLUMN_NAME_CommuterId + TEXT_TYPE + COMMA_SEP +
                     Ride.COLUMN_NAME_CommuterName + TEXT_TYPE + COMMA_SEP +
                     Ride.COLUMN_NAME_CommuterPhoto + TEXT_TYPE + COMMA_SEP +
+                    Ride.COLUMN_NAME_CommuterMobileNo + TEXT_TYPE + COMMA_SEP +
                     Ride.COLUMN_NAME_VehicleId + TEXT_TYPE + COMMA_SEP +
                     Ride.COLUMN_NAME_OrigLocation + TEXT_TYPE + COMMA_SEP +
                     Ride.COLUMN_NAME_OrigLong + DECIMAL_TYPE + COMMA_SEP +
@@ -39,6 +40,7 @@ public class Database_RideContract {
         public static final String COLUMN_NAME_CommuterId = "CommuterId";
         public static final String COLUMN_NAME_CommuterName = "CommuterName";
         public static final String COLUMN_NAME_CommuterPhoto = "CommuterPhoto";
+        public static final String COLUMN_NAME_CommuterMobileNo = "CommuterMobileNo";
         public static final String COLUMN_NAME_VehicleId = "VehicleId";
         public static final String COLUMN_NAME_OrigLocation = "OrigLocation";
         public static final String COLUMN_NAME_OrigLong = "OrigLong";
