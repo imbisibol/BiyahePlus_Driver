@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -33,8 +34,11 @@ import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -46,11 +50,13 @@ public class MainActivityFragment extends Fragment {
     String UserID;
     String VehicleId;
     Integer RideId;
+    Timer timer;
+    MyTimerTask myTimerTask;
+
     private CommuterRequestTask mAuthTask = null;
     private AcceptBookingTask mBookTask = null;
 
     //CONTROLS
-    ProgressBar login_progress = null;
     LinearLayout dvOperatorRequest = null;
     ImageView imgAvatarURL;
     TextView lblFirstName;
@@ -67,6 +73,7 @@ public class MainActivityFragment extends Fragment {
 
     ImageButton ibtnAccept;
 
+    TextView lblUpdating;
 
 
     public MainActivityFragment() {
@@ -83,7 +90,11 @@ public class MainActivityFragment extends Fragment {
         UserID = mSettings.getString(getString(R.string.SHARE_PREF_UserId), null);
 
         //INITIALIZE CONTROLS
-        login_progress = (ProgressBar) rootView.findViewById(R.id.login_progress);
+        timer = new Timer();
+        myTimerTask = new MyTimerTask();
+        lblUpdating = (TextView)rootView.findViewById(R.id.lblUpdating);
+        timer.schedule(myTimerTask, 60000, 60000);
+
         dvOperatorRequest = (LinearLayout) rootView.findViewById(R.id.dvOperatorRequest);
         imgAvatarURL = (ImageView) rootView.findViewById(R.id.imgAvatarURL);
         lblFirstName = (TextView) rootView.findViewById(R.id.lblFirstName);
@@ -102,11 +113,10 @@ public class MainActivityFragment extends Fragment {
         ibtnAccept.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!Common.GetInternetConnectivity((ConnectivityManager)getActivity().getSystemService(Context.CONNECTIVITY_SERVICE))) {
+                if (!Common.GetInternetConnectivity((ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE))) {
                     Toast toast = Toast.makeText(getContext(), R.string.InternetConnectionMessage, Toast.LENGTH_SHORT);
                     toast.show();
-                }
-                else {
+                } else {
 
                     AcceptBooking(RideId);
 
@@ -204,6 +214,7 @@ public class MainActivityFragment extends Fragment {
                 Database_RideContract.Ride.COLUMN_NAME_OrigLocation,
                 Database_RideContract.Ride.COLUMN_NAME_DestLocation,
                 Database_RideContract.Ride.COLUMN_NAME_LastUpdated,
+                Database_RideContract.Ride.COLUMN_NAME_Status
         };
 
         Cursor c = db.query(
@@ -229,6 +240,14 @@ public class MainActivityFragment extends Fragment {
                 lblCommuterDestination.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_DestLocation)));
                 lblRideDate.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_LastUpdated)));
 
+                if(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_Status)).equals("Open"))
+                {
+                    ibtnAccept.setVisibility(View.VISIBLE);
+                }
+                else
+                {
+                    ibtnAccept.setVisibility(View.GONE);
+                }
 
             }
         }
@@ -296,7 +315,7 @@ public class MainActivityFragment extends Fragment {
 
                 Common comm = new Common();
                 comm.setAPIURL(getString(R.string.APIURL));
-                jsonResponse = comm.GetAPI("api/RideView?commuterId=&vehicleId=" + mVehicleId + "&status=Open&appId=" + getString(R.string.app_id));
+                jsonResponse = comm.GetAPI("api/RideView?commuterId=&vehicleId=" + mVehicleId + "&status=&appId=" + getString(R.string.app_id));
 
 
                 if (jsonResponse != null) {
@@ -313,8 +332,10 @@ public class MainActivityFragment extends Fragment {
                             for(int ctr=0;ctr < rides.length(); ctr++) {
 
                                 String status = rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_Status);
+                                String vehicleId = rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_VehicleId);
 
-                                if(status.equals("Open")) {
+                                if(status.equals("Open")
+                                        || (vehicleId.equals(VehicleId))) {
 
                                     RideId = rides.getJSONObject(ctr).getInt(Database_RideContract.Ride.COLUMN_NAME_Id);
 
@@ -352,6 +373,18 @@ public class MainActivityFragment extends Fragment {
 
                             }
                         }
+                        else {
+
+                            RideId = 0;
+
+                            // Gets the data repository in write mode
+                            DatabaseHelper helper = DatabaseHelper.getInstance(getContext());
+                            SQLiteDatabase db = helper.getWritableDatabase();
+
+                            long newRowId;
+                            db.delete(Database_RideContract.Ride.TABLE_NAME, null, null);
+                            db.close(); //SAVE TO DB
+                        }
 
 
                         loginSuccess = true;
@@ -374,9 +407,6 @@ public class MainActivityFragment extends Fragment {
             showProgress(false);
 
             if (success) {
-                lblNoRequestLabel.setVisibility(View.VISIBLE);
-                dvOperatorRequest.setVisibility(View.GONE);
-
                 if(RideId != null) {
                     LoadBooking(RideId.toString());
                 }
@@ -450,7 +480,7 @@ public class MainActivityFragment extends Fragment {
 
                 ibtnAccept.setVisibility(View.GONE);
 
-                Toast toast = Toast.makeText(getContext(), "Booking has been accepted! Thank you and take care!", Toast.LENGTH_SHORT);
+                Toast toast = Toast.makeText(getContext(), R.string.BookingAcceptedMessage, Toast.LENGTH_SHORT);
                 toast.show();
             }
             else {
@@ -465,9 +495,31 @@ public class MainActivityFragment extends Fragment {
         }
     }
 
+    class MyTimerTask extends TimerTask {
+
+        @Override
+        public void run() {
+
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    LoadCommuterRequests(VehicleId);
+                }
+            });
+        }
+
+    }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     public void showProgress(final boolean show) {
+        if(show)
+        {
+            lblUpdating.setVisibility(View.VISIBLE);
+        }
+        else{
+            lblUpdating.setVisibility(View.INVISIBLE);
+        }
+
         /*
         // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
         // for very easy animations. If available, use these APIs to fade-in

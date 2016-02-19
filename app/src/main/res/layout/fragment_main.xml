@@ -73,18 +73,24 @@
             />
 
         <TextView
+            android:id="@+id/lblUpdating"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10dp"
+            android:text="@string/lblUpdating"
+            android:textColor="@color/fontColor"
+            android:visibility="invisible"
+            />
+
+        <TextView
             android:id="@+id/lblNoRequestLabel"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/lblNoRequestLabel"
             android:layout_gravity="center"
-            android:textColor="@color/fontColor"/>
-
-        <ProgressBar android:id="@+id/login_progress" style="?android:attr/progressBarStyleLarge"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginBottom="8dp" android:visibility="gone" />
+            android:textColor="@color/fontColorSub"/>
 
         <ScrollView
             android:layout_width="fill_parent"
@@ -145,7 +151,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textSize="14dp"
-                            android:textColor="@color/fontColor"
+                            android:textColor="@color/fontColorSub"
                             />
 
                         <TextView

@@ -25,8 +25,10 @@
     <string name="error_incorrect_password">Username and Password do not match!</string>
     <string name="error_field_required">This field is required</string>
     <string name="lblOperatorRequestLabel">Operator Request</string>
-    <string name="lblNoRequestLabel">No requests yet. Please keep this open to stay up to date on Booking Requests.</string>
+    <string name="lblNoRequestLabel">No requests yet.\n\n Please keep this open to stay up to date on Booking Requests.</string>
     <string name="lblCommuterOriginLabel">Origin:</string>
     <string name="lblCommuterDestinationLabel">Destination:</string>
     <string name="InternetConnectionMessage">Internet connection is required.</string>
+    <string name="lblUpdating">Updating...</string>
+    <string name="BookingAcceptedMessage">Booking has been accepted! Thank you and safe travels!</string>
 </resources>
