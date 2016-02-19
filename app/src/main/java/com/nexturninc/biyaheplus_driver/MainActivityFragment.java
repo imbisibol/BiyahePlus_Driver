@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.media.Image;
 import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -20,13 +21,20 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -39,6 +47,7 @@ public class MainActivityFragment extends Fragment {
     String VehicleId;
     Integer RideId;
     private CommuterRequestTask mAuthTask = null;
+    private AcceptBookingTask mBookTask = null;
 
     //CONTROLS
     ProgressBar login_progress = null;
@@ -50,10 +59,14 @@ public class MainActivityFragment extends Fragment {
     TextView lblNoRequestLabel;
 
     TextView lblRideId;
+    TextView lblRideDate;
     ImageView imgCommuterAvatar;
     TextView lblCommuterName;
     TextView lblCommuterOrigin;
     TextView lblCommuterDestination;
+
+    ImageButton ibtnAccept;
+
 
 
     public MainActivityFragment() {
@@ -79,11 +92,27 @@ public class MainActivityFragment extends Fragment {
         lblNoRequestLabel = (TextView)rootView.findViewById(R.id.lblNoRequestLabel);
 
         lblRideId = (TextView)rootView.findViewById(R.id.lblRideId);
+        lblRideDate = (TextView)rootView.findViewById(R.id.lblRideDate);
         imgCommuterAvatar = (ImageView) rootView.findViewById(R.id.imgCommuterAvatar);
         lblCommuterName = (TextView) rootView.findViewById(R.id.lblCommuterName);
         lblCommuterOrigin = (TextView)rootView.findViewById(R.id.lblCommuterOrigin);
         lblCommuterDestination = (TextView)rootView.findViewById(R.id.lblCommuterDestination);
 
+        ibtnAccept = (ImageButton)rootView.findViewById(R.id.ibtnAccept);
+        ibtnAccept.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!Common.GetInternetConnectivity((ConnectivityManager)getActivity().getSystemService(Context.CONNECTIVITY_SERVICE))) {
+                    Toast toast = Toast.makeText(getContext(), R.string.InternetConnectionMessage, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                else {
+
+                    AcceptBooking(RideId);
+
+                }
+            }
+        });
 
         LoadProfileData(UserID);
         LoadVehicleData(UserID);
@@ -122,8 +151,8 @@ public class MainActivityFragment extends Fragment {
         if (c.moveToNext()) {
 
             Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_AvatarURL)), imgAvatarURL);
-            lblFirstName.setText(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_FirstName)));
-            lblLastName.setText(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_LastName)) + ",");
+            lblFirstName.setText(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_FirstName)) + " " + c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_LastName)));
+            //lblLastName.setText(c.getString(c.getColumnIndexOrThrow(Database_UserProfileContract.UserProfile.COLUMN_NAME_LastName)) + ",");
 
         }
     }
@@ -174,7 +203,7 @@ public class MainActivityFragment extends Fragment {
                 Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto,
                 Database_RideContract.Ride.COLUMN_NAME_OrigLocation,
                 Database_RideContract.Ride.COLUMN_NAME_DestLocation,
-
+                Database_RideContract.Ride.COLUMN_NAME_LastUpdated,
         };
 
         Cursor c = db.query(
@@ -198,6 +227,9 @@ public class MainActivityFragment extends Fragment {
                 lblCommuterName.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterName)));
                 lblCommuterOrigin.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_OrigLocation)));
                 lblCommuterDestination.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_DestLocation)));
+                lblRideDate.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_LastUpdated)));
+
+
             }
         }
         else {
@@ -206,6 +238,7 @@ public class MainActivityFragment extends Fragment {
         }
 
     }
+
 
     private void LoadCommuterRequests(String vehicleId) {
 
@@ -218,7 +251,31 @@ public class MainActivityFragment extends Fragment {
             mAuthTask = new CommuterRequestTask(vehicleId);
             mAuthTask.execute((Void) null);
         }
+        else
+        {
+            Toast toast = Toast.makeText(getContext(), R.string.InternetConnectionMessage, Toast.LENGTH_SHORT);
+            toast.show();
+        }
     }
+
+    private void AcceptBooking(Integer rideId) {
+
+        if (mAuthTask != null) {
+            return;
+        }
+
+        if (Common.GetInternetConnectivity((ConnectivityManager)getContext().getSystemService(Context.CONNECTIVITY_SERVICE))) {
+            showProgress(true);
+            mBookTask = new AcceptBookingTask(rideId, "Assigned", UserID);
+            mBookTask.execute((Void) null);
+        }
+        else
+        {
+            Toast toast = Toast.makeText(getContext(), R.string.InternetConnectionMessage, Toast.LENGTH_SHORT);
+            toast.show();
+        }
+    }
+
 
     public class CommuterRequestTask extends AsyncTask<Void, Void, Boolean> {
 
@@ -253,38 +310,47 @@ public class MainActivityFragment extends Fragment {
 
                         if(rides != null && rides.length() > 0) {
 
-                            RideId = rides.getJSONObject(0).getInt(Database_RideContract.Ride.COLUMN_NAME_Id);
+                            for(int ctr=0;ctr < rides.length(); ctr++) {
 
-                            // Gets the data repository in write mode
-                            DatabaseHelper helper = DatabaseHelper.getInstance(getContext());
-                            SQLiteDatabase db = helper.getWritableDatabase();
+                                String status = rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_Status);
 
-                            // Create a new map of values, where column names are the keys
-                            ContentValues values = new ContentValues();
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_Id, rides.getJSONObject(0).getInt(Database_RideContract.Ride.COLUMN_NAME_Id));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterId, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterId));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterName, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterName));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLocation, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_OrigLocation));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLong, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLong));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLat, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLat));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_DestLocation, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_DestLocation));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_DestLong, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_DestLong));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_DestLat, rides.getJSONObject(0).getDouble(Database_RideContract.Ride.COLUMN_NAME_DestLat));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_LastUpdated, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_LastUpdated));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_Status, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_Status));
-                            values.put(Database_RideContract.Ride.COLUMN_NAME_VehicleId, rides.getJSONObject(0).getString(Database_RideContract.Ride.COLUMN_NAME_VehicleId));
+                                if(status.equals("Open")) {
 
-                            long newRowId;
-                            db.delete(Database_RideContract.Ride.TABLE_NAME, null, null);
+                                    RideId = rides.getJSONObject(ctr).getInt(Database_RideContract.Ride.COLUMN_NAME_Id);
 
-                            newRowId = db.insert(
-                                    Database_RideContract.Ride.TABLE_NAME,
-                                    Database_RideContract.Ride.COLUMN_NAME_Id,
-                                    values);
+                                    // Gets the data repository in write mode
+                                    DatabaseHelper helper = DatabaseHelper.getInstance(getContext());
+                                    SQLiteDatabase db = helper.getWritableDatabase();
+
+                                    // Create a new map of values, where column names are the keys
+                                    ContentValues values = new ContentValues();
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_Id, rides.getJSONObject(ctr).getInt(Database_RideContract.Ride.COLUMN_NAME_Id));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterId, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterId));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterName, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterName));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLocation, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_OrigLocation));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLong, rides.getJSONObject(ctr).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLong));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_OrigLat, rides.getJSONObject(ctr).getDouble(Database_RideContract.Ride.COLUMN_NAME_OrigLat));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_DestLocation, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_DestLocation));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_DestLong, rides.getJSONObject(ctr).getDouble(Database_RideContract.Ride.COLUMN_NAME_DestLong));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_DestLat, rides.getJSONObject(ctr).getDouble(Database_RideContract.Ride.COLUMN_NAME_DestLat));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_LastUpdated, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_LastUpdated));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_Status, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_Status));
+                                    values.put(Database_RideContract.Ride.COLUMN_NAME_VehicleId, rides.getJSONObject(ctr).getString(Database_RideContract.Ride.COLUMN_NAME_VehicleId));
+
+                                    long newRowId;
+                                    db.delete(Database_RideContract.Ride.TABLE_NAME, null, null);
+
+                                    newRowId = db.insert(
+                                            Database_RideContract.Ride.TABLE_NAME,
+                                            Database_RideContract.Ride.COLUMN_NAME_Id,
+                                            values);
 
 
-                            db.close(); //SAVE TO DB
+                                    db.close(); //SAVE TO DB
+                                }
+
+                            }
                         }
 
 
@@ -326,6 +392,79 @@ public class MainActivityFragment extends Fragment {
             showProgress(false);
         }
     }
+
+    public class AcceptBookingTask extends AsyncTask<Void, Void, Boolean> {
+
+        private final Integer mRideId;
+        private final String mStatus;
+        private final String mUserId;
+
+        AcceptBookingTask(Integer rideId, String status, String userId)
+        {
+            mRideId = rideId;
+            mStatus = status;
+            mUserId = userId;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // TODO: attempt authentication against a network service.
+
+            Boolean loginSuccess = false;
+            JSONObject jsonResponse = null;
+
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+
+                Common comm = new Common();
+                comm.setAPIURL(getString(R.string.APIURL));
+                jsonResponse = comm.PostAPI(jsonParam, "api/Ride?id=" + mRideId + "&status=" + mStatus + "&userId=" + mUserId + "&appId=" + getString(R.string.app_id));
+
+                if (jsonResponse != null) {
+
+                    String strSuccess = jsonResponse.getString("Success");
+
+                    if (strSuccess == "true") {
+
+                        loginSuccess = true;
+                    }
+                }
+
+            }
+            catch (Exception ex) {
+                String message = ex.getMessage();
+            }
+
+
+            // TODO: register the new account here.
+            return loginSuccess;
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            mAuthTask = null;
+            showProgress(false);
+
+            if (success) {
+
+                ibtnAccept.setVisibility(View.GONE);
+
+                Toast toast = Toast.makeText(getContext(), "Booking has been accepted! Thank you and take care!", Toast.LENGTH_SHORT);
+                toast.show();
+            }
+            else {
+
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            mAuthTask = null;
+            showProgress(false);
+        }
+    }
+
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     public void showProgress(final boolean show) {

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <color name="baseBG">#FFFFFF</color>
+    <color name="baseBG">#5E5E5E</color>
+    <color name="fontColor">#FFFFFF</color>
+    <color name="fontColorSub">#FDFDFD</color>
 
 </resources>
