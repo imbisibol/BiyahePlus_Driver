@@ -23,7 +23,8 @@ public class Database_VehicleContract {
                     Vehicle.COLUMN_NAME_LocLong + DECIMAL_TYPE + COMMA_SEP +
                     Vehicle.COLUMN_NAME_LocLat + DECIMAL_TYPE + COMMA_SEP +
                     Vehicle.COLUMN_NAME_DriverName + TEXT_TYPE + COMMA_SEP +
-                    Vehicle.COLUMN_NAME_DriverPhoto + TEXT_TYPE +
+                    Vehicle.COLUMN_NAME_DriverPhoto + TEXT_TYPE + COMMA_SEP +
+                    Vehicle.COLUMN_NAME_Status + TEXT_TYPE +
                     " )";
     public static final String SQL_DELETE_TABLE =
             "DROP TABLE IF EXISTS " + Vehicle.TABLE_NAME;
@@ -39,6 +40,7 @@ public class Database_VehicleContract {
         public static final String COLUMN_NAME_LocLat = "LocLat";
         public static final String COLUMN_NAME_DriverName = "DriverName";
         public static final String COLUMN_NAME_DriverPhoto = "DriverPhoto";
+        public static final String COLUMN_NAME_Status = "Status";
 
     }
 

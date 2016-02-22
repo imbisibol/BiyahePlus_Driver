@@ -5,11 +5,15 @@
     <string name="SharedPrefName">com.driver.biyaheplus</string>
     <string name="action_settings">Settings</string>
 
-    <string name="message_Internet_Required">This requires an active Internet connection.</string>
+    <string name="VehicleStatus_Active">Active</string>
+    <string name="VehicleStatus_Inactive">Inactive</string>
 
     <!-- CODE NAMING -->
+    <string name="SHARE_PREF_VehicleId">VehicleId</string>
     <string name="SHARE_PREF_UserId">UserId</string>
     <string name="SHARE_PREF_UserName">Username</string>
+    <string name="SHARE_PREF_VehicleStatus">VehicleStatus</string>
+
 
     <!-- LABELS and BUTTONS-->
     <string name="action_logout">Log Out</string>
@@ -33,4 +37,10 @@
     <string name="BookingAcceptedMessage">Booking has been accepted! Thank you and safe travels!</string>
     <string name="CommuterNoMobile">Commuter does not have a Mobile Number.</string>
     <string name="ErrorMessage">An unexpected error has occurred!</string>
+    <string name="action_stopRequests">Stop Accepting Requests</string>
+    <string name="action_startRequests">Start Accepting Requests</string>
+    <string name="message_Internet_Required">This requires an active Internet connection.</string>
+    <string name="DriverStatusUpdatedMessage">Status has been updated!</string>
+    <string name="DriverInactiveMessage">You are currently INACTIVE.\n\n To start receiving Booking Requests, select \'Start Accepting Requests\' from the Options menu.</string>
+
 </resources>

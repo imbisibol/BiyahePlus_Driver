@@ -93,6 +93,16 @@
             android:layout_gravity="center"
             android:textColor="@color/fontColorSub"/>
 
+        <TextView
+            android:id="@+id/lblDriverInactive"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/DriverInactiveMessage"
+            android:layout_gravity="center"
+            android:textColor="@color/fontColorSub"
+            android:visibility="gone" />
+
         <ScrollView
             android:layout_width="fill_parent"
             android:layout_height="fill_parent">

@@ -325,7 +325,7 @@ public class LoginActivity extends Activity implements LoaderManager.LoaderCallb
                             SharedPreferences.Editor editor = mSettings.edit();
                             editor.putString(getString(R.string.SHARE_PREF_UserId), userId);
                             editor.putString(getString(R.string.SHARE_PREF_UserName), userDisplay);
-                            editor.commit();
+
 
 
                             // Gets the data repository in write mode
@@ -367,6 +367,12 @@ public class LoginActivity extends Activity implements LoaderManager.LoaderCallb
                                     values2.put(Database_VehicleContract.Vehicle.COLUMN_NAME_LocLat, vehicleInfo.getDouble("LocLat"));
                                     values2.put(Database_VehicleContract.Vehicle.COLUMN_NAME_DriverName, vehicleInfo.getString("DriverName"));
                                     values2.put(Database_VehicleContract.Vehicle.COLUMN_NAME_DriverPhoto, vehicleInfo.getString("DriverPhoto"));
+                                    values2.put(Database_VehicleContract.Vehicle.COLUMN_NAME_Status, vehicleInfo.getString("Status"));
+
+
+                                    //SAVE TO SHARED PREF
+                                    editor.putString(getString(R.string.SHARE_PREF_VehicleId), vehicleInfo.getString("Id"));
+                                    editor.putString(getString(R.string.SHARE_PREF_VehicleStatus), vehicleInfo.getString("Status"));
 
 
                                     //SAVE TO DB
@@ -388,6 +394,7 @@ public class LoginActivity extends Activity implements LoaderManager.LoaderCallb
                             }
 
 
+                            editor.commit();
                             db.close();
 
                         }

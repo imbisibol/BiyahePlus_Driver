@@ -28,6 +28,9 @@ import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -36,9 +39,11 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -58,6 +63,7 @@ public class MainActivityFragment extends Fragment {
     String UserID;
     String VehicleId;
     Integer RideId;
+    Integer TimerSeconds;
     Timer timer;
     MyTimerTask myTimerTask;
 
@@ -81,6 +87,7 @@ public class MainActivityFragment extends Fragment {
     TextView lblLastName;
 
     TextView lblNoRequestLabel;
+    TextView lblDriverInactive;
 
     TextView lblRideId;
     TextView lblRideDate;
@@ -110,10 +117,11 @@ public class MainActivityFragment extends Fragment {
         UserID = mSettings.getString(getString(R.string.SHARE_PREF_UserId), null);
 
         //INITIALIZE CONTROLS
+        TimerSeconds = 0;
         timer = new Timer();
         myTimerTask = new MyTimerTask();
         lblUpdating = (TextView)rootView.findViewById(R.id.lblUpdating);
-        timer.schedule(myTimerTask, 60000, 60000);
+        timer.schedule(myTimerTask, 10000, 10000);
 
         dvOperatorRequest = (LinearLayout) rootView.findViewById(R.id.dvOperatorRequest);
         imgAvatarURL = (ImageView) rootView.findViewById(R.id.imgAvatarURL);
@@ -121,6 +129,7 @@ public class MainActivityFragment extends Fragment {
         lblLastName = (TextView) rootView.findViewById(R.id.lblLastName);
 
         lblNoRequestLabel = (TextView)rootView.findViewById(R.id.lblNoRequestLabel);
+        lblDriverInactive = (TextView)rootView.findViewById(R.id.lblDriverInactive);
 
         lblRideId = (TextView)rootView.findViewById(R.id.lblRideId);
         lblRideDate = (TextView)rootView.findViewById(R.id.lblRideDate);
@@ -204,7 +213,6 @@ public class MainActivityFragment extends Fragment {
 
         return rootView;
     }
-
 
     //METHODS
     private void LoadProfileData(String id) {
@@ -678,10 +686,36 @@ public class MainActivityFragment extends Fragment {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    LoadCommuterRequests(VehicleId);
+                    TimerSeconds += 10;
 
-                    if(locationChanged) {
-                        UpdateLocationRequests(VehicleId);
+                    //DRIVER STATUS
+                    if (((MainActivity) getActivity()).driverStatus.equals(getString(R.string.VehicleStatus_Inactive))
+                            && lblDriverInactive.getVisibility() == View.GONE)
+                    {
+                        lblNoRequestLabel.setVisibility(View.GONE);
+                        dvOperatorRequest.setVisibility(View.GONE);
+                        lblDriverInactive.setVisibility(View.VISIBLE);
+                    }
+                    else if(!((MainActivity) getActivity()).driverStatus.equals(getString(R.string.VehicleStatus_Inactive))
+                            && lblDriverInactive.getVisibility() == View.VISIBLE)
+                    {
+                        lblDriverInactive.setVisibility(View.GONE);
+                        LoadCommuterRequests(VehicleId);
+                    }
+
+                    //MAIN OPERATION
+                    if(TimerSeconds >= 60) {
+
+                        TimerSeconds = 0;
+
+                        if (((MainActivity) getActivity()).driverStatus.equals(getString(R.string.VehicleStatus_Active))) {
+
+                            LoadCommuterRequests(VehicleId);
+
+                            if (locationChanged) {
+                                UpdateLocationRequests(VehicleId);
+                            }
+                        }
                     }
                 }
             });
