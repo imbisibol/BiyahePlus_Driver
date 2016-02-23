@@ -13,6 +13,12 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.Shader;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -40,6 +46,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -83,6 +92,7 @@ public class MainActivityFragment extends Fragment {
     //CONTROLS
     LinearLayout dvOperatorRequest = null;
     ImageView imgAvatarURL;
+    ImageView imgConnection;
     TextView lblFirstName;
     TextView lblLastName;
 
@@ -125,6 +135,7 @@ public class MainActivityFragment extends Fragment {
 
         dvOperatorRequest = (LinearLayout) rootView.findViewById(R.id.dvOperatorRequest);
         imgAvatarURL = (ImageView) rootView.findViewById(R.id.imgAvatarURL);
+        imgConnection = (ImageView) rootView.findViewById(R.id.imgConnection);
         lblFirstName = (TextView) rootView.findViewById(R.id.lblFirstName);
         lblLastName = (TextView) rootView.findViewById(R.id.lblLastName);
 
@@ -326,7 +337,11 @@ public class MainActivityFragment extends Fragment {
             dvOperatorRequest.setVisibility(View.VISIBLE);
             if (c.moveToNext()) {
 
-                Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto)), imgCommuterAvatar);
+                //IMAGE
+                DisplayImageOptions userimgoptions = new DisplayImageOptions.Builder()
+                        .displayer(new RoundedBitmapDisplayer(1000)).build();
+
+                Common.getImageLoader(null).displayImage(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterPhoto)), imgCommuterAvatar, userimgoptions);
 
                 lblRideId.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_Id)));
                 lblCommuterName.setText(c.getString(c.getColumnIndexOrThrow(Database_RideContract.Ride.COLUMN_NAME_CommuterName)));
@@ -695,12 +710,16 @@ public class MainActivityFragment extends Fragment {
                         lblNoRequestLabel.setVisibility(View.GONE);
                         dvOperatorRequest.setVisibility(View.GONE);
                         lblDriverInactive.setVisibility(View.VISIBLE);
+
+                        imgConnection.setImageResource(R.mipmap.offline);
                     }
                     else if(!((MainActivity) getActivity()).driverStatus.equals(getString(R.string.VehicleStatus_Inactive))
                             && lblDriverInactive.getVisibility() == View.VISIBLE)
                     {
                         lblDriverInactive.setVisibility(View.GONE);
                         LoadCommuterRequests(VehicleId);
+
+                        imgConnection.setImageResource(R.mipmap.online);
                     }
 
                     //MAIN OPERATION

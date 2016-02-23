@@ -30,12 +30,21 @@
                 android:layout_height="fill_parent"
                 android:orientation="horizontal">
 
+                <ImageView
+                    android:id="@+id/imgConnection"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginTop="10dp"
+                    android:src="@mipmap/online"
+                    />
+
                 <TextView
                     android:id="@+id/lblLastName"
                     android:textAppearance="?android:attr/textAppearanceLarge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="24dp"
+                    android:textSize="20dp"
                     android:textColor="@color/fontColor"
                     android:text="Welcome, "
                     />
@@ -45,7 +54,7 @@
                     android:textAppearance="?android:attr/textAppearanceLarge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="28dp"
+                    android:textSize="24dp"
                     android:textColor="@color/fontColor"
                     />
 
@@ -114,6 +123,7 @@
                 android:textAlignment="center"
                 android:layout_gravity="center"
                 android:layout_margin="10dp"
+                android:layout_marginTop="0dp"
                 android:visibility="gone">
 
                 <!-- OPERATOR REQUEST DETAILS -->

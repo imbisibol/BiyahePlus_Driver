@@ -40,7 +40,7 @@
     <string name="action_stopRequests">Stop Accepting Requests</string>
     <string name="action_startRequests">Start Accepting Requests</string>
     <string name="message_Internet_Required">This requires an active Internet connection.</string>
-    <string name="DriverStatusUpdatedMessage">Status has been updated!</string>
+    <string name="DriverStatusUpdatedMessage">Status has been updated! Please wait while the screen is being updated.</string>
     <string name="DriverInactiveMessage">You are currently INACTIVE.\n\n To start receiving Booking Requests, select \'Start Accepting Requests\' from the Options menu.</string>
 
 </resources>
